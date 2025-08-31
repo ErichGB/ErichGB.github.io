@@ -1,0 +1,58 @@
+# Spanish translations for MobileLanter
+
+[mobilelanter_title]
+other = "Mobile Lantern"
+
+[qr_generator_title]
+other = "Generador de Código QR"
+
+[qr_generator_subtitle]
+other = "Genera códigos QR para experiencias de aprendizaje móvil"
+
+[username_label]
+other = "Usuario"
+
+[username_placeholder]
+other = "Ingresa el usuario"
+
+[password_label]
+other = "Contraseña"
+
+[password_placeholder]
+other = "Ingresa la contraseña"
+
+[context_label]
+other = "Contexto"
+
+[context_placeholder]
+other = "Ingresa el contexto"
+
+[generate_button]
+other = "Generar"
+
+[generating_button]
+other = "Generando..."
+
+[generated_qr_title]
+other = "Código QR Generado"
+
+[download_button]
+other = "Descargar"
+
+[download_app_button]
+other = "Descargar App"
+
+[theme_light]
+other = "Claro"
+
+[theme_dark]
+other = "Oscuro"
+
+[theme_auto]
+other = "Auto"
+
+[shortcut_theme]
+other = "Tema"
+
+[coming_soon_tag]
+other = "Próximamente"

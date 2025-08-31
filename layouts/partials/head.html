@@ -11,11 +11,25 @@
 {{ partial "meta" . }}
 <script>
     // On page load or when changing themes, best to add inline in `head` to avoid FOUC
-    if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-    } else {
-        document.documentElement.classList.remove('dark')
-    }
+    (function() {
+        const theme = localStorage.getItem('theme') || 'auto';
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        let shouldBeDark = false;
+        
+        if (theme === 'dark') {
+            shouldBeDark = true;
+        } else if (theme === 'light') {
+            shouldBeDark = false;
+        } else if (theme === 'auto') {
+            shouldBeDark = mediaQuery.matches;
+        }
+        
+        if (shouldBeDark) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    })();
 </script>
 {{ $styles := resources.Get "/css/style.css" | postCSS }}
 {{ if .Site.IsServer }}

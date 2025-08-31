@@ -1,103 +1,108 @@
 {{ define "main" }}
-<main class="grow grid gap-6 grid-flow-row p-6 content-start mx-auto
+<div class="bg-sky-50 h-screen flex
+             dark:bg-gray-900
+             md:items-center md:justify-center
+             ">
+    <main class="grow grid gap-6 grid-flow-row p-6 content-start mx-auto
              md:max-w-sm ">
-    <article class="grid text-center items-center gap-2 content-start py-8 md:py-2">
+        <article class="grid text-center items-center gap-2 content-start py-8 md:py-2">
 
-        {{ $heroOne := resources.GetMatch "images/global/avatar.jpg" }}
+            {{ $heroOne := resources.GetMatch "images/global/avatar.jpg" }}
 
-        {{ $tiny := ($heroOne.Fit "65x65 q100") }}
-        {{ $small := ($heroOne.Fit "80x80 q80") }}
-        {{ $medium := ($heroOne.Fit "1024x280 q80") }}
-        {{ $large := ($heroOne.Fit "1374x1000 q80") }}
+            {{ $tiny := ($heroOne.Fit "65x65 q100") }}
+            {{ $small := ($heroOne.Fit "80x80 q80") }}
+            {{ $medium := ($heroOne.Fit "1024x280 q80") }}
+            {{ $large := ($heroOne.Fit "1374x1000 q80") }}
 
-        <img srcset="
+            <img srcset="
             {{- with $tiny.RelPermalink -}}{{.}} 380w{{- end -}}
             {{- with $small.RelPermalink -}}, {{.}} 768w{{- end -}}
             {{- with $medium.RelPermalink -}}, {{.}} 1024w{{- end -}}
-            {{- with $large.RelPermalink -}}, {{.}} 1374w{{- end -}}" 
-            src="{{ $heroOne.RelPermalink }}"
-            alt="Avatar Autor Image"
-            class="rounded-full mx-auto w-20 h-20" 
-            loading="lazy" />
+            {{- with $large.RelPermalink -}}, {{.}} 1374w{{- end -}}"
+                 src="{{ $heroOne.RelPermalink }}"
+                 alt="Avatar Autor Image"
+                 class="rounded-full mx-auto w-20 h-20"
+                 loading="lazy" />
 
-        <h1 class="font-semibold text-xl text-gray-950/75 dark:text-sky-50">Erich González</h1>
-        <p class="text-slate-400"> Full-Stack JavaScript Developer <br>  Front-End Specialist </p>
-    </article>
+            <h1 class="font-semibold text-xl text-gray-950/75 dark:text-sky-50">Erich González</h1>
+            <p class="text-slate-400"> Full-Stack JavaScript Developer <br>  Front-End Specialist </p>
+        </article>
 
-    <section class="grid items-center gap-4 grid-cols-2">
-        <div class="flex items-center grid-cols-2 gap-2 p-2 bg-sky-100 dark:bg-slate-800 rounded-md">
-            <div class="flex-none">
-                <span class="top-0 float-left text-slate-400">+</span>
-                <span class="text-4xl text-slate-950/75 dark:text-sky-50">10</span>
+        <section class="grid items-center gap-4 grid-cols-2">
+            <div class="flex items-center grid-cols-2 gap-2 p-2 bg-sky-100 dark:bg-slate-800 rounded-md">
+                <div class="flex-none">
+                    <span class="top-0 float-left text-slate-400">+</span>
+                    <span class="text-4xl text-slate-950/75 dark:text-sky-50">10</span>
+                </div>
+                <p class="grow text-slate-400 text-xs">
+                    <span>Year</span>
+                    <span>Experience</span>
+                </p>
             </div>
-            <p class="grow text-slate-400 text-xs">
-                <span>Year</span>
-                <span>Experience</span>
-            </p>
-        </div>
-        <div class="flex items-center grid-cols-2 gap-2 p-2 bg-sky-100 dark:bg-slate-800 rounded-md">
-            <div class="flex-none dark:text-sky-50">
-                <span class="top-0 float-left text-slate-400">+</span>
-                <span class="text-4xl text-slate-950/75 dark:text-sky-50">25</span>
+            <div class="flex items-center grid-cols-2 gap-2 p-2 bg-sky-100 dark:bg-slate-800 rounded-md">
+                <div class="flex-none dark:text-sky-50">
+                    <span class="top-0 float-left text-slate-400">+</span>
+                    <span class="text-4xl text-slate-950/75 dark:text-sky-50">25</span>
+                </div>
+                <p class="grow text-slate-400 text-xs">
+                    <span>Projects</span>
+                    <span>Completed</span>
+                </p>
             </div>
-            <p class="grow text-slate-400 text-xs">
-                <span>Projects</span>
-                <span>Completed</span>
-            </p>
-        </div>
-    </section>
-    
-    <section class="grid items-center grid-cols-4 gap-4">
-        <a target="_blank" href="https://t.me/ErichGB" 
-            class="flex justify-center items-center aspect-[4/3] bg-sky-100 rounded-md dark:bg-slate-800">
-            <span class="sr-only">telegram</span>
-            <div class="dark:grayscale">
-                <svg class="mx-auto h-8" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M16 32C24.8366 32 32 24.8366 32 16C32 7.16344 24.8366 0 16 0C7.16344 0 0 7.16344 0 16C0 24.8366 7.16344 32 16 32Z" fill="url(#paint0_linear_472_84)"/>
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M6.33996 15.672C9.82124 14.2074 13.312 12.7654 16.812 11.346C21.798 9.35798 22.492 9.06798 23.166 9.05798C23.4556 9.06702 23.7343 9.17024 23.96 9.35198C24.242 9.59198 24.328 9.74398 24.352 9.87798C24.374 10.012 24.372 10.43 24.348 10.668C24.078 13.39 23.052 19.676 22.458 22.728C22.206 24.018 21.71 24.45 21.23 24.492C20.188 24.584 19.396 23.832 18.386 23.196C16.806 22.202 16.278 21.836 14.746 20.866C12.972 19.746 13.702 19.356 14.712 18.35C14.976 18.088 19.356 14.09 19.422 13.726C19.478 13.406 19.498 13.364 19.354 13.22C19.208 13.076 19.034 13.094 18.922 13.118C18.762 13.152 16.35 14.678 11.682 17.698C10.966 18.172 10.318 18.402 9.73596 18.39C9.09596 18.376 7.86196 18.042 6.94596 17.756C5.81996 17.404 4.92596 17.22 5.00596 16.624C5.04596 16.314 5.48996 15.996 6.33996 15.672Z" fill="white"/>
-                    <defs>
-                        <linearGradient id="paint0_linear_472_84" x1="16" y1="0" x2="16" y2="32" gradientUnits="userSpaceOnUse">
-                        <stop stop-color="#38AEEB"/>
-                        <stop offset="1" stop-color="#279AD1"/>
-                        </linearGradient>
-                    </defs>
-                </svg>
-            </div>
-        </a>
-        <a target="_blank" href="https://github.com/ErichGB" 
-            class="flex justify-center items-center aspect-[4/3] bg-sky-100 rounded-md dark:bg-slate-800">
-            <span class="sr-only">github</span>
-            <div class="dark:text-sky-50">
-                <svg class="mx-auto h-9" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path fill-rule="evenodd"
-                          d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                          clip-rule="evenodd" />
-                </svg>
-            </div>
-        </a>
-        <a target="_blank" href="mailto:erichfgb@gmail.com" 
-            class="flex justify-center items-center aspect-[4/3] bg-sky-100 rounded-md dark:bg-slate-800">
-            <span class="sr-only">email</span>
-            <div class="dark:grayscale">
-                <svg class="mx-auto h-8" viewBox="0 0 33 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2.84844 25.0031H7.93935V12.6395L0.666626 7.18494V22.8213C0.666626 24.0286 1.64481 25.0031 2.84844 25.0031Z" fill="#4285F4"/>
-                    <path d="M25.3939 25.0031H30.4848C31.6921 25.0031 32.6666 24.0249 32.6666 22.8213V7.18494L25.3939 12.6395" fill="#34A853"/>
-                    <path d="M25.3939 3.1849V12.6394L32.6666 7.18489V4.2758C32.6666 1.57762 29.5866 0.0394403 27.4303 1.65762" fill="#FBBC04"/>
-                    <path d="M7.93933 12.6395V3.18494L16.6666 9.73039L25.3939 3.18494V12.6395L16.6666 19.1849" fill="#EA4335"/>
-                    <path d="M0.666626 4.2758V7.18489L7.93935 12.6394V3.1849L5.90299 1.65762C3.74299 0.0394403 0.666626 1.57762 0.666626 4.2758Z" fill="#C5221F"/>
-                </svg>
-            </div>
-        </a>
-        <a target="_blank" href="https://www.linkedin.com/in/erichgb" 
-            class="flex justify-center items-center aspect-[4/3] bg-sky-100 rounded-md 
+        </section>
+
+        <section class="grid items-center grid-cols-4 gap-4">
+            <a target="_blank" href="https://t.me/ErichGB"
+               class="flex justify-center items-center aspect-[4/3] bg-sky-100 rounded-md dark:bg-slate-800">
+                <span class="sr-only">telegram</span>
+                <div class="dark:grayscale">
+                    <svg class="mx-auto h-8" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 32C24.8366 32 32 24.8366 32 16C32 7.16344 24.8366 0 16 0C7.16344 0 0 7.16344 0 16C0 24.8366 7.16344 32 16 32Z" fill="url(#paint0_linear_472_84)"/>
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M6.33996 15.672C9.82124 14.2074 13.312 12.7654 16.812 11.346C21.798 9.35798 22.492 9.06798 23.166 9.05798C23.4556 9.06702 23.7343 9.17024 23.96 9.35198C24.242 9.59198 24.328 9.74398 24.352 9.87798C24.374 10.012 24.372 10.43 24.348 10.668C24.078 13.39 23.052 19.676 22.458 22.728C22.206 24.018 21.71 24.45 21.23 24.492C20.188 24.584 19.396 23.832 18.386 23.196C16.806 22.202 16.278 21.836 14.746 20.866C12.972 19.746 13.702 19.356 14.712 18.35C14.976 18.088 19.356 14.09 19.422 13.726C19.478 13.406 19.498 13.364 19.354 13.22C19.208 13.076 19.034 13.094 18.922 13.118C18.762 13.152 16.35 14.678 11.682 17.698C10.966 18.172 10.318 18.402 9.73596 18.39C9.09596 18.376 7.86196 18.042 6.94596 17.756C5.81996 17.404 4.92596 17.22 5.00596 16.624C5.04596 16.314 5.48996 15.996 6.33996 15.672Z" fill="white"/>
+                        <defs>
+                            <linearGradient id="paint0_linear_472_84" x1="16" y1="0" x2="16" y2="32" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#38AEEB"/>
+                                <stop offset="1" stop-color="#279AD1"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+            </a>
+            <a target="_blank" href="https://github.com/ErichGB"
+               class="flex justify-center items-center aspect-[4/3] bg-sky-100 rounded-md dark:bg-slate-800">
+                <span class="sr-only">github</span>
+                <div class="dark:text-sky-50">
+                    <svg class="mx-auto h-9" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill-rule="evenodd"
+                              d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                              clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </a>
+            <a target="_blank" href="mailto:erichfgb@gmail.com"
+               class="flex justify-center items-center aspect-[4/3] bg-sky-100 rounded-md dark:bg-slate-800">
+                <span class="sr-only">email</span>
+                <div class="dark:grayscale">
+                    <svg class="mx-auto h-8" viewBox="0 0 33 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2.84844 25.0031H7.93935V12.6395L0.666626 7.18494V22.8213C0.666626 24.0286 1.64481 25.0031 2.84844 25.0031Z" fill="#4285F4"/>
+                        <path d="M25.3939 25.0031H30.4848C31.6921 25.0031 32.6666 24.0249 32.6666 22.8213V7.18494L25.3939 12.6395" fill="#34A853"/>
+                        <path d="M25.3939 3.1849V12.6394L32.6666 7.18489V4.2758C32.6666 1.57762 29.5866 0.0394403 27.4303 1.65762" fill="#FBBC04"/>
+                        <path d="M7.93933 12.6395V3.18494L16.6666 9.73039L25.3939 3.18494V12.6395L16.6666 19.1849" fill="#EA4335"/>
+                        <path d="M0.666626 4.2758V7.18489L7.93935 12.6394V3.1849L5.90299 1.65762C3.74299 0.0394403 0.666626 1.57762 0.666626 4.2758Z" fill="#C5221F"/>
+                    </svg>
+                </div>
+            </a>
+            <a target="_blank" href="https://www.linkedin.com/in/erichgb"
+               class="flex justify-center items-center aspect-[4/3] bg-sky-100 rounded-md
                     dark:bg-slate-800">
-            <span class="sr-only">Linkeding</span>
-            <div class="dark:text-sky-50 text-linkeding">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" data-supported-dps="24x24" fill="currentColor" class="h-9" focusable="false">
-                    <path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"></path>
-                </svg>
-            </div>
-        </a>
-    </section>
-</main>
+                <span class="sr-only">Linkeding</span>
+                <div class="dark:text-sky-50 text-linkeding">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" data-supported-dps="24x24" fill="currentColor" class="h-9" focusable="false">
+                        <path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"></path>
+                    </svg>
+                </div>
+            </a>
+        </section>
+    </main>
+</div>
 {{ end }}

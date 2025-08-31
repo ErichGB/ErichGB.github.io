@@ -2,8 +2,8 @@ baseURL = "https://erichgb.github.io/"
 relativeURLs = true
 title = "ErichGB"
 
-languageCode = "en-us"
-DefaultContentLanguage = "en"
+languageCode = "es-es"
+DefaultContentLanguage = "es"
 
 enableEmoji = true
 enableGitInfo = true
