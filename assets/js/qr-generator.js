@@ -11,6 +11,14 @@ class QRGenerator {
     this.fields = {};
     this.currentQRData = null;
     this.originalButtonText = '';
+    // Character counter elements & config
+    this.charCounter = {
+      text: null,
+      remaining: null,
+      bar: null,
+      warning: null,
+      max: 800
+    };
     this.init();
   }
 
@@ -29,6 +37,12 @@ class QRGenerator {
       context: document.getElementById('context')
     };
 
+    // Character counter elements
+    this.charCounter.text = document.getElementById('char-counter-text');
+    this.charCounter.remaining = document.getElementById('char-counter-remaining');
+    this.charCounter.bar = document.getElementById('char-counter-bar');
+    this.charCounter.warning = document.getElementById('char-counter-warning');
+
     if (!this.form || !this.generateButton || !this.canvas) {
       console.error('QR Generator: Required elements not found');
       return;
@@ -38,6 +52,7 @@ class QRGenerator {
     this.originalButtonText = this.generateButton.textContent.trim();
     
     this.setupEventListeners();
+    this.updateCharCounter();
     this.validateForm(); // Initial validation
     console.log('QR Generator initialized with real QRCode library');
   }
@@ -52,8 +67,14 @@ class QRGenerator {
     // Field validation on input
     Object.values(this.fields).forEach(field => {
       if (field) {
-        field.addEventListener('input', () => this.validateForm());
-        field.addEventListener('blur', () => this.validateForm());
+        field.addEventListener('input', () => {
+          this.validateForm();
+          this.updateCharCounter();
+        });
+        field.addEventListener('blur', () => {
+          this.validateForm();
+          this.updateCharCounter();
+        });
       }
     });
 
@@ -67,18 +88,79 @@ class QRGenerator {
     }
   }
 
+  getQRContentString() {
+    const userName = this.fields.userName?.value.trim() || '';
+    const password = this.fields.password?.value.trim() || '';
+    const context = this.fields.context?.value.trim() || '';
+    const qrData = { userName, password, context };
+    try {
+      return JSON.stringify(qrData);
+    } catch {
+      return '';
+    }
+  }
+
+  updateCharCounter() {
+    if (!this.charCounter.text) return;
+
+    const content = this.getQRContentString();
+    const length = content.length;
+    const max = this.charCounter.max;
+    const percent = Math.min((length / max) * 100, 100);
+    const remaining = max - length;
+
+    // Update text
+    this.charCounter.text.textContent = `${length} / ${max} caracteres`;
+    if (this.charCounter.remaining) {
+      if (remaining >= 0) {
+        this.charCounter.remaining.textContent = `${remaining} restantes`;
+      } else {
+        this.charCounter.remaining.textContent = `${Math.abs(remaining)} sobre el límite`;
+      }
+    }
+
+    // Update bar width & color with inline styles (avoid relying on purged classes)
+    if (this.charCounter.bar) {
+      this.charCounter.bar.style.width = `${percent}%`;
+      let color = '#22c55e'; // green-500
+      if (length > max) {
+        color = '#dc2626'; // red-600
+      } else if (length > max * 0.85) {
+        color = '#f97316'; // orange-500
+      } else if (length > max * 0.6) {
+        color = '#facc15'; // yellow-400
+      }
+      this.charCounter.bar.style.backgroundColor = color;
+      this.charCounter.bar.setAttribute('aria-valuenow', String(Math.min(length, max)));
+    }
+
+    // Warning visibility
+    if (this.charCounter.warning) {
+      if (length > max) {
+        this.charCounter.warning.classList.remove('hidden');
+      } else {
+        this.charCounter.warning.classList.add('hidden');
+      }
+    }
+  }
+
   validateForm() {
     const userName = this.fields.userName?.value.trim() || '';
     const password = this.fields.password?.value.trim() || '';
     const context = this.fields.context?.value.trim() || '';
 
     // Check if all required fields have values
-    const isValid = userName.length > 0 && password.length > 0 && context.length > 0;
+    const basicValid = userName.length > 0 && password.length > 0 && context.length > 0;
+
+    // Length constraint (full JSON content length inside QR)
+    const qrContent = this.getQRContentString();
+    const withinLimit = qrContent.length <= this.charCounter.max;
+
+    const isValid = basicValid && withinLimit;
 
     // Enable/disable generate button
     if (this.generateButton) {
       this.generateButton.disabled = !isValid;
-      
       if (isValid) {
         this.generateButton.classList.remove('opacity-50', 'cursor-not-allowed');
         this.generateButton.classList.add('hover:bg-slate-800', 'dark:hover:bg-slate-100');
@@ -177,24 +259,24 @@ class QRGenerator {
       // Ensure we only download once per click
       const timestamp = Date.now();
       const filename = `mobilelanter-qr-${timestamp}.png`;
-      
+
       // Create download link
       const link = document.createElement('a');
       link.download = filename;
       link.href = this.canvas.toDataURL('image/png');
       link.style.display = 'none';
-      
+
       // Trigger download and cleanup
       document.body.appendChild(link);
       link.click();
-      
+
       // Remove link after a short delay
       setTimeout(() => {
         if (document.body.contains(link)) {
           document.body.removeChild(link);
         }
       }, 100);
-      
+
       console.log('QR code downloaded:', filename);
     } catch (error) {
       console.error('Error downloading QR code:', error);

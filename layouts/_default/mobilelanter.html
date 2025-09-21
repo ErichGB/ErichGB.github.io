@@ -107,6 +107,17 @@
             >
               {{ i18n "generate_button" }}
             </button>
+            <!-- Character Counter -->
+            <div id="char-counter" class="mt-2 text-xs text-slate-600 dark:text-slate-400">
+              <div class="flex justify-between items-center mb-1">
+                <span id="char-counter-text">0 / 800 caracteres</span>
+                <span id="char-counter-remaining" class="font-medium"></span>
+              </div>
+              <div class="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded overflow-hidden">
+                <div id="char-counter-bar" class="h-1 bg-green-500 transition-all duration-300" style="width:0%"></div>
+              </div>
+              <p id="char-counter-warning" class="mt-1 text-[10px] text-orange-500 hidden">Has superado el máximo para un QR fiable. Reduce el texto.</p>
+            </div>
           </form>
         </div>
 
