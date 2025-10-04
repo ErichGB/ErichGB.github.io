@@ -16,16 +16,30 @@
 
         <!-- Actions -->
         <div class="flex items-center">
-          <!-- Mobile App Download Button - Disabled -->
+          <!-- Mobile App Download Button -->
           <div class="relative">
-            <button disabled class="inline-flex items-center px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium rounded border border-slate-200 dark:border-slate-700 cursor-not-allowed transition-colors">
+            <a id="download-app-btn" href="#" class="inline-flex items-center px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium rounded border border-slate-200 dark:border-slate-700 cursor-not-allowed transition-colors" style="display: none;">
+              <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+              </svg>
+              <span id="download-text">{{ i18n "download_app_button" }}</span>
+            </a>
+            
+            <!-- Coming Soon Button (fallback) -->
+            <button id="coming-soon-btn" class="inline-flex items-center px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium rounded border border-slate-200 dark:border-slate-700 cursor-not-allowed transition-colors">
               <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
               </svg>
               {{ i18n "download_app_button" }}
             </button>
+            
+            <!-- Version Badge -->
+            <span id="version-badge" class="absolute -top-1 -right-1 px-1 py-0.5 bg-green-500 text-white text-xs font-medium rounded-full shadow-sm" style="display: none;">
+              <span id="version-text">v1.0.0</span>
+            </span>
+            
             <!-- Coming Soon Badge -->
-            <span class="absolute -top-1 -right-1 px-1 py-0.5 bg-orange-500 text-white text-xs font-medium rounded-full shadow-sm">
+            <span id="coming-soon-badge" class="absolute -top-1 -right-1 px-1 py-0.5 bg-orange-500 text-white text-xs font-medium rounded-full shadow-sm">
               {{ i18n "coming_soon_tag" }}
             </span>
           </div>
@@ -151,6 +165,67 @@
 
   <!-- Footer -->
   {{ partial "mobilelanter-footer.html" . }}
+  
+  <!-- Script para manejo dinámico del enlace de descarga -->
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+      // Función para cargar la información del APK
+      async function loadDownloadInfo() {
+          try {
+              const response = await fetch('/mobile-lantern-download.json');
+              if (response.ok) {
+                  const data = await response.json();
+                  if (data.available && data.download_url) {
+                      updateDownloadButton(data);
+                  }
+              }
+          } catch (error) {
+              console.log('No hay información de descarga disponible:', error);
+          }
+      }
+      
+      // Función para actualizar el botón de descarga
+      function updateDownloadButton(data) {
+          const downloadBtn = document.getElementById('download-app-btn');
+          const comingSoonBtn = document.getElementById('coming-soon-btn');
+          const comingSoonBadge = document.getElementById('coming-soon-badge');
+          const versionBadge = document.getElementById('version-badge');
+          const versionText = document.getElementById('version-text');
+          const downloadText = document.getElementById('download-text');
+          
+          if (downloadBtn && comingSoonBtn && data.download_url) {
+              // Ocultar botón "Coming Soon"
+              comingSoonBtn.style.display = 'none';
+              comingSoonBadge.style.display = 'none';
+              
+              // Configurar botón de descarga
+              downloadBtn.href = data.download_url;
+              downloadBtn.style.display = 'inline-flex';
+              downloadBtn.classList.remove('cursor-not-allowed');
+              downloadBtn.classList.add('cursor-pointer');
+              downloadBtn.classList.remove('bg-slate-100', 'hover:bg-slate-200', 'dark:bg-slate-800', 'dark:hover:bg-slate-700', 'text-slate-600', 'dark:text-slate-300');
+              downloadBtn.classList.add('bg-green-600', 'hover:bg-green-700', 'dark:bg-green-600', 'dark:hover:bg-green-700', 'text-white');
+              
+              if (downloadText) {
+                  downloadText.textContent = 'Descargar APK';
+              }
+              if (versionText && data.version) {
+                  versionText.textContent = data.version;
+                  versionBadge.style.display = 'inline-block';
+              }
+              
+              downloadBtn.setAttribute('download', data.apk_name || 'mobile-lantern.apk');
+              
+              downloadBtn.addEventListener('click', function(e) {
+                  console.log('Descargando Mobile Lantern APK:', data.version);
+              });
+          }
+      }
+      
+      loadDownloadInfo();
+      setInterval(loadDownloadInfo, 30000);
+  });
+  </script>
 </div>
 
 {{ end }}
