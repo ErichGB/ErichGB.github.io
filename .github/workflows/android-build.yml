@@ -129,6 +129,7 @@ jobs:
           repository: ${{ steps.parse_repo.outputs.repo_path }}
           ref: ${{ needs.check-comment.outputs.branch }}
           path: android-app-full
+          token: ${{ secrets.PRIVATE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: 📁 Extraer subdirectorio si es necesario
         run: |
