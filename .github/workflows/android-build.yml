@@ -160,24 +160,18 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 📱 Configurar Android SDK (Completo)
-        uses: android-actions/setup-android@v3
-        with:
-          packages: |
-            platform-tools
-            build-tools;34.0.0
-            platforms;android-34
-            platforms;android-33
-            platforms;android-32
-            platforms;android-31
-            platforms;android-30
-
-      - name: 🔧 Configurar variables de entorno Android
+      - name: 📱 Configurar Android SDK
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+          # Los runners de GitHub ya tienen Android SDK instalado
+          # Solo necesitamos instalar las versiones específicas que falten
+          yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install \
+            "build-tools;34.0.0" \
+            "platforms;android-34" \
+            "platforms;android-33" \
+            "platforms;android-32" \
+            "platforms;android-31" \
+            "platforms;android-30"
 
       - name: 🔧 Configurar Gradle
         run: |
