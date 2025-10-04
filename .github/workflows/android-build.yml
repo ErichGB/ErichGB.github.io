@@ -167,6 +167,7 @@ jobs:
           yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
           ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install \
             "build-tools;34.0.0" \
+            "platforms;android-35" \
             "platforms;android-34" \
             "platforms;android-33" \
             "platforms;android-32" \
@@ -178,8 +179,16 @@ jobs:
           cd android-app
           chmod +x gradlew
           
-          # Crear local.properties con la ruta del Android SDK
+          # Crear local.properties con la ruta del Android SDK y API key
           echo "sdk.dir=$ANDROID_HOME" > local.properties
+          
+          # Agregar API key de Gemini si está disponible
+          if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
+            echo "apiKey=${{ secrets.GEMINI_API_KEY }}" >> local.properties
+          else
+            echo "⚠️ Warning: GEMINI_API_KEY no está configurado. El build puede fallar."
+            echo "apiKey=dummy_key_for_build" >> local.properties
+          fi
           
       - name: 🧹 Limpiar proyecto
         run: |
