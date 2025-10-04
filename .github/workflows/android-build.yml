@@ -164,7 +164,6 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           packages: |
-            tools
             platform-tools
             build-tools;34.0.0
             platforms;android-34
@@ -177,7 +176,7 @@ jobs:
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          echo "$ANDROID_HOME/tools/bin" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
 
       - name: 🔧 Configurar Gradle
