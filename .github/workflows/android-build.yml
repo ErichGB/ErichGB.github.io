@@ -86,7 +86,7 @@ jobs:
     if: needs.check-comment.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     outputs:
-      download_url: ${{ steps.release.outputs.download_url }}
+      download_url: ${{ steps.get_url.outputs.download_url }}
       apk_name: ${{ steps.build.outputs.apk_name }}
     steps:
       - name: 📥 Checkout del repositorio actual
