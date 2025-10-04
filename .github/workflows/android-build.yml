@@ -178,6 +178,9 @@ jobs:
           cd android-app
           chmod +x gradlew
           
+          # Crear local.properties con la ruta del Android SDK
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          
       - name: 🧹 Limpiar proyecto
         run: |
           cd android-app
