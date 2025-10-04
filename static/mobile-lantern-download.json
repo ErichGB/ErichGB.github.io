@@ -1,8 +1,8 @@
 {
-  "version": "v0.1.0",
-  "download_url": "",
-  "apk_name": "mobile-lantern-v0.1.0-release.apk",
-  "build_type": "release",
-  "updated_at": "2025-10-04T16:09:11Z",
+  "version": "v0.1.1",
+  "download_url": "https://github.com/ErichGB/ErichGB.github.io/releases/download/v0.1.1-android/mobile-lantern-v0.1.1-debug.apk",
+  "apk_name": "mobile-lantern-v0.1.1-debug.apk",
+  "build_type": "debug",
+  "updated_at": "2025-10-04T16:59:41Z",
   "available": true
 }
