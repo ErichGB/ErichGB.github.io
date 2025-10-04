@@ -1,0 +1,110 @@
+name: 🚀 Solicitud de Build Android para Mobile Lantern
+description: Solicita la creación de un build Android y actualización del enlace de descarga
+title: "[BUILD] Nuevo build Android para Mobile Lantern"
+labels: ["android-build", "mobile-lantern"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 📱 Solicitud de Build Android
+        
+        Este template permite solicitar la creación de un nuevo build de la aplicación Android de Mobile Lantern.
+        
+        **⚠️ Importante:** Asegúrate de tener los permisos necesarios para ejecutar workflows en este repositorio.
+
+  - type: input
+    id: repo_url
+    attributes:
+      label: 🔗 URL del Repositorio Android
+      description: URL completa del repositorio que contiene el código fuente de la aplicación Android
+      placeholder: "https://github.com/usuario/mobile-lantern-android"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: branch
+    attributes:
+      label: 🌿 Rama del Repositorio
+      description: Selecciona la rama que se debe usar para el build
+      options:
+        - main
+        - master
+        - develop
+        - release
+      default: 0
+    validations:
+      required: true
+
+  - type: input
+    id: version_name
+    attributes:
+      label: 📦 Nombre de Versión
+      description: Nombre de la versión para el APK (ej. v1.0.0, v2.1.3)
+      placeholder: "v1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: build_type
+    attributes:
+      label: 🔨 Tipo de Build
+      description: Selecciona el tipo de build a generar
+      options:
+        - release
+        - debug
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: release_notes
+    attributes:
+      label: 📝 Notas de la Versión
+      description: Describe los cambios incluidos en esta versión
+      placeholder: |
+        - Nueva funcionalidad X
+        - Corrección de bug Y
+        - Mejoras de rendimiento
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: ✅ Confirmación
+      description: Confirma que cumples con los requisitos
+      options:
+        - label: Tengo permisos para ejecutar workflows en este repositorio
+          required: true
+        - label: El repositorio Android especificado es accesible públicamente o tengo acceso a él
+          required: true
+        - label: He verificado que la rama especificada existe y contiene código válido
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        
+        ### 🤖 Activación del Workflow
+        
+        Una vez creado este issue, comenta con el texto exacto:
+        
+        ```
+        /build-android
+        ```
+        
+        Esto activará automáticamente el workflow de build de Android.
+        
+        ### 📋 Proceso
+        
+        1. El workflow clonará el repositorio especificado
+        2. Configurará el entorno de build Android
+        3. Generará el APK
+        4. Subirá el archivo a GitHub Releases
+        5. Actualizará el enlace de descarga en la página Mobile Lantern
+        
+        ### ⏱️ Tiempo Estimado
+        
+        El proceso completo puede tomar entre 5-15 minutos dependiendo del tamaño del proyecto.

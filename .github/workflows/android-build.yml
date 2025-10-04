@@ -1,0 +1,347 @@
+name: 🚀 Build Android App para Mobile Lantern
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+  pages: write
+  id-token: write
+
+jobs:
+  check-comment:
+    if: github.event.issue.state == 'open' && contains(github.event.comment.body, '/build-android')
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+      repo_url: ${{ steps.parse.outputs.repo_url }}
+      branch: ${{ steps.parse.outputs.branch }}
+      version_name: ${{ steps.parse.outputs.version_name }}
+      build_type: ${{ steps.parse.outputs.build_type }}
+      release_notes: ${{ steps.parse.outputs.release_notes }}
+    steps:
+      - name: ✅ Verificar comando y parsear issue
+        id: check
+        run: |
+          if [[ "${{ github.event.comment.body }}" == *"/build-android"* ]]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📋 Parsear información del issue
+        id: parse
+        if: steps.check.outputs.should_build == 'true'
+        run: |
+          # Obtener el cuerpo del issue
+          issue_body="${{ github.event.issue.body }}"
+          
+          # Extraer URL del repositorio (buscar línea que contenga https://github.com)
+          repo_url=$(echo "$issue_body" | grep -oP 'https://github\.com/[^\s]+' | head -1)
+          echo "repo_url=$repo_url" >> $GITHUB_OUTPUT
+          
+          # Extraer rama (buscar después de "Rama del Repositorio")
+          branch=$(echo "$issue_body" | grep -A5 "Rama del Repositorio" | grep -oP '(main|master|develop|release)' | head -1)
+          if [ -z "$branch" ]; then branch="main"; fi
+          echo "branch=$branch" >> $GITHUB_OUTPUT
+          
+          # Extraer nombre de versión
+          version_name=$(echo "$issue_body" | grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          if [ -z "$version_name" ]; then version_name="v1.0.0"; fi
+          echo "version_name=$version_name" >> $GITHUB_OUTPUT
+          
+          # Extraer tipo de build (por defecto release)
+          if echo "$issue_body" | grep -q "debug"; then
+            build_type="debug"
+          else
+            build_type="release"
+          fi
+          echo "build_type=$build_type" >> $GITHUB_OUTPUT
+          
+          # Extraer notas de versión (simplificado)
+          release_notes="Nueva versión de Mobile Lantern Android"
+          echo "release_notes=$release_notes" >> $GITHUB_OUTPUT
+
+      - name: 💬 Comentar inicio del proceso
+        if: steps.check.outputs.should_build == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🚀 **Iniciando build de Android...**\n\n' +
+                    '📱 Repositorio: `${{ steps.parse.outputs.repo_url }}`\n' +
+                    '🌿 Rama: `${{ steps.parse.outputs.branch }}`\n' +
+                    '📦 Versión: `${{ steps.parse.outputs.version_name }}`\n' +
+                    '🔨 Tipo: `${{ steps.parse.outputs.build_type }}`\n\n' +
+                    'Puedes seguir el progreso en la pestaña [Actions](https://github.com/${{ github.repository }}/actions).'
+            })
+
+  build-android:
+    needs: check-comment
+    if: needs.check-comment.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      download_url: ${{ steps.release.outputs.download_url }}
+      apk_name: ${{ steps.build.outputs.apk_name }}
+    steps:
+      - name: 📥 Checkout del repositorio actual
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: website
+
+      - name: 🔍 Parsear URL del repositorio
+        id: parse_repo
+        run: |
+          REPO_URL="${{ needs.check-comment.outputs.repo_url }}"
+          echo "URL completa: $REPO_URL"
+          
+          if [[ $REPO_URL == *"github.com"* ]]; then
+            # Extraer owner/repo (sin el /tree/branch/path)
+            REPO_PATH=$(echo $REPO_URL | sed 's|https://github.com/||' | sed 's|/tree/.*||')
+            echo "Repositorio: $REPO_PATH"
+            echo "repo_path=$REPO_PATH" >> $GITHUB_OUTPUT
+            
+            # Si la URL contiene un subdirectorio específico
+            if [[ $REPO_URL == *"/tree/"* ]]; then
+              # Extraer el subdirectorio después de /tree/branch/
+              SUBDIR=$(echo $REPO_URL | sed 's|.*/tree/[^/]*/||')
+              echo "Subdirectorio: $SUBDIR"
+              echo "subdir=$SUBDIR" >> $GITHUB_OUTPUT
+              echo "has_subdir=true" >> $GITHUB_OUTPUT
+            else
+              echo "📁 Usando raíz del repositorio"
+              echo "has_subdir=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "❌ URL de repositorio no válida"
+            exit 1
+          fi
+
+      - name: 📥 Checkout del repositorio Android
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.parse_repo.outputs.repo_path }}
+          ref: ${{ needs.check-comment.outputs.branch }}
+          path: android-app-full
+
+      - name: 📁 Extraer subdirectorio si es necesario
+        run: |
+          if [ "${{ steps.parse_repo.outputs.has_subdir }}" == "true" ]; then
+            SUBDIR="${{ steps.parse_repo.outputs.subdir }}"
+            echo "Extrayendo subdirectorio: $SUBDIR"
+            
+            if [ -d "android-app-full/$SUBDIR" ]; then
+              echo "✅ Subdirectorio encontrado, copiando..."
+              cp -r "android-app-full/$SUBDIR" android-app
+            else
+              echo "⚠️ Subdirectorio no encontrado, listando contenido:"
+              ls -la android-app-full/
+              echo "Usando raíz del repositorio"
+              cp -r android-app-full android-app
+            fi
+          else
+            echo "📁 Usando raíz del repositorio"
+            cp -r android-app-full android-app
+          fi
+          
+          echo "📋 Contenido del directorio android-app:"
+          ls -la android-app/
+
+      - name: ☕ Configurar Java JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: 📱 Configurar Android SDK (Completo)
+        uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            tools
+            platform-tools
+            build-tools;34.0.0
+            platforms;android-34
+            platforms;android-33
+            platforms;android-32
+            platforms;android-31
+            platforms;android-30
+
+      - name: 🔧 Configurar variables de entorno Android
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "$ANDROID_HOME/tools/bin" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+
+      - name: 🔧 Configurar Gradle
+        run: |
+          cd android-app
+          chmod +x gradlew
+          
+      - name: 🧹 Limpiar proyecto
+        run: |
+          cd android-app
+          ./gradlew clean
+
+      - name: 🏗️ Build del APK
+        id: build
+        run: |
+          cd android-app
+          
+          echo "🔨 Iniciando build de tipo: ${{ needs.check-comment.outputs.build_type }}"
+          
+          if [ "${{ needs.check-comment.outputs.build_type }}" == "release" ]; then
+            ./gradlew assembleRelease --no-daemon --stacktrace --info
+            APK_PATH=$(find . -name "*-release*.apk" | head -1)
+          else
+            ./gradlew assembleDebug --no-daemon --stacktrace --info
+            APK_PATH=$(find . -name "*-debug*.apk" | head -1)
+          fi
+          
+          if [ -z "$APK_PATH" ]; then
+            echo "❌ No se pudo encontrar el APK generado"
+            exit 1
+          fi
+          
+          # Renombrar APK con información de versión
+          APK_NAME="mobile-lantern-${{ needs.check-comment.outputs.version_name }}-${{ needs.check-comment.outputs.build_type }}.apk"
+          mv "$APK_PATH" "../$APK_NAME"
+          
+          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+          echo "✅ APK generado: $APK_NAME"
+
+      - name: 📦 Crear Release en GitHub
+        id: release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.check-comment.outputs.version_name }}-android
+          name: "Mobile Lantern Android ${{ needs.check-comment.outputs.version_name }}"
+          body: |
+            🚀 **Nueva versión de Mobile Lantern para Android**
+            
+            📱 **Versión:** ${{ needs.check-comment.outputs.version_name }}
+            🔨 **Tipo de Build:** ${{ needs.check-comment.outputs.build_type }}
+            🌿 **Rama:** ${{ needs.check-comment.outputs.branch }}
+            📅 **Fecha:** $(date +'%Y-%m-%d %H:%M:%S UTC')
+            
+            ### 📝 Notas de la versión
+            ${{ needs.check-comment.outputs.release_notes }}
+            
+            ### 📲 Instalación
+            1. Descarga el archivo APK
+            2. Habilita "Fuentes desconocidas" en tu dispositivo Android
+            3. Instala la aplicación
+            
+            ---
+            *Generado automáticamente por GitHub Actions*
+          files: ${{ steps.build.outputs.apk_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📝 Obtener URL de descarga
+        id: get_url
+        run: |
+          # Construir URL de descarga del release
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${{ needs.check-comment.outputs.version_name }}-android/${{ steps.build.outputs.apk_name }}"
+          echo "download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
+
+  update-website:
+    needs: [check-comment, build-android]
+    if: needs.check-comment.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout del sitio web
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔄 Actualizar enlace de descarga en Mobile Lantern
+        run: |
+          # Crear archivo JSON con información del APK
+          cat > static/mobile-lantern-download.json << EOF
+          {
+            "version": "${{ needs.check-comment.outputs.version_name }}",
+            "download_url": "${{ needs.build-android.outputs.download_url }}",
+            "apk_name": "${{ needs.build-android.outputs.apk_name }}",
+            "build_type": "${{ needs.check-comment.outputs.build_type }}",
+            "updated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "available": true
+          }
+          EOF
+          
+          echo "✅ Archivo de configuración actualizado"
+
+      - name: 🚀 Commit y Push de cambios
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add static/mobile-lantern-download.json
+          git commit -m "🤖 Actualizar enlace de descarga Mobile Lantern ${{ needs.check-comment.outputs.version_name }}" || exit 0
+          git push
+
+      - name: ☕ Instalar Hugo CLI
+        run: |
+          wget -O /tmp/hugo.deb https://github.com/gohugoio/hugo/releases/download/v0.121.0/hugo_extended_0.121.0_linux-amd64.deb
+          sudo dpkg -i /tmp/hugo.deb
+
+      - name: 📦 Instalar dependencias Node.js
+        run: |
+          npm install -g pnpm
+          pnpm install
+
+      - name: 🏗️ Build del sitio web
+        run: |
+          hugo --minify
+
+      - name: 🚀 Deploy a GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          publish_branch: gh-pages
+
+      - name: 💬 Comentar resultado exitoso
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🎉 **¡Build completado exitosamente!**\n\n' +
+                    '📱 **APK generado:** `${{ needs.build-android.outputs.apk_name }}`\n' +
+                    '📦 **Versión:** `${{ needs.check-comment.outputs.version_name }}`\n' +
+                    '🔗 **Enlace de descarga:** [${{ needs.build-android.outputs.apk_name }}](${{ needs.build-android.outputs.download_url }})\n\n' +
+                    '✅ El enlace de descarga ha sido actualizado automáticamente en la página [Mobile Lantern](https://erichgb.github.io/mobilelanter/).\n\n' +
+                    '🔄 El sitio web se actualizará en unos minutos.'
+            })
+
+  handle-error:
+    needs: [check-comment, build-android]
+    if: failure() && needs.check-comment.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 💬 Comentar error
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **Error durante el build**\n\n' +
+                    'Hubo un problema al generar el APK. Posibles causas:\n\n' +
+                    '- El repositorio no es accesible o no existe\n' +
+                    '- La rama especificada no existe\n' +
+                    '- Error en la configuración del proyecto Android\n' +
+                    '- Dependencias faltantes o incompatibles\n\n' +
+                    'Por favor verifica la información proporcionada y consulta los [logs del workflow](https://github.com/${{ github.repository }}/actions) para más detalles.'
+            })
