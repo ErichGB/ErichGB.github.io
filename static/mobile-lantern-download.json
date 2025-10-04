@@ -1,8 +1,8 @@
 {
-  "version": null,
-  "download_url": null,
-  "apk_name": null,
-  "build_type": null,
-  "updated_at": null,
-  "available": false
+  "version": "v0.1.0",
+  "download_url": "",
+  "apk_name": "mobile-lantern-v0.1.0-release.apk",
+  "build_type": "release",
+  "updated_at": "2025-10-04T16:09:11Z",
+  "available": true
 }
