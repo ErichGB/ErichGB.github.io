@@ -285,14 +285,6 @@ jobs:
           
           echo "✅ Archivo de configuración actualizado"
 
-      - name: 🚀 Commit y Push de cambios
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add static/mobile-lantern-download.json
-          git commit -m "🤖 Actualizar enlace de descarga Mobile Lantern ${{ needs.check-comment.outputs.version_name }}" || exit 0
-          git push
-
       - name: ☕ Instalar Hugo CLI
         run: |
           wget -O /tmp/hugo.deb https://github.com/gohugoio/hugo/releases/download/v0.121.0/hugo_extended_0.121.0_linux-amd64.deb
@@ -313,6 +305,14 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
           publish_branch: gh-pages
+
+      - name: 📝 Commit cambios del JSON al repositorio
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add static/mobile-lantern-download.json
+          git commit -m "🤖 Actualizar enlace de descarga Mobile Lantern ${{ needs.check-comment.outputs.version_name }}" || echo "No hay cambios para commitear"
+          git push || echo "No se pudo pushear, continuando..."
 
       - name: 💬 Comentar resultado exitoso
         uses: actions/github-script@v7
