@@ -7,7 +7,7 @@ other = "Mobile Lantern"
 other = "Generador de Código QR"
 
 [qr_generator_subtitle]
-other = "Genera códigos QR para experiencias de aprendizaje móvil"
+other = "Genera códigos QR necesarios para hacer check-in en la aplicación móvil MobileLantern"
 
 [username_label]
 other = "Usuario"
