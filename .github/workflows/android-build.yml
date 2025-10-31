@@ -189,13 +189,13 @@ jobs:
             echo "🔑 Configurando keystore personalizado..."
             echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > app/release-keystore.jks
             
-            # Configurar propiedades de firma
-            cat >> gradle.properties << EOF
-          RELEASE_STORE_FILE=release-keystore.jks
-          RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}
-          RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
-          EOF
+            # Configurar propiedades de firma (asegurar nueva línea al inicio)
+            echo "" >> gradle.properties
+            echo "RELEASE_STORE_FILE=release-keystore.jks" >> gradle.properties
+            echo "RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> gradle.properties
+            echo "RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> gradle.properties
+            echo "RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> gradle.properties
+            
             echo "✅ Keystore personalizado configurado"
           else
             echo "⚠️ No hay keystore personalizado. Creando keystore temporal..."
@@ -210,13 +210,13 @@ jobs:
               -keypass android \
               -dname "CN=Mobile Lantern, OU=Development, O=GitHub Actions, L=Internet, ST=Cloud, C=US"
             
-            # Configurar propiedades de firma con valores temporales
-            cat >> gradle.properties << EOF
-          RELEASE_STORE_FILE=release-keystore.jks
-          RELEASE_STORE_PASSWORD=android
-          RELEASE_KEY_ALIAS=release-key
-          RELEASE_KEY_PASSWORD=android
-          EOF
+            # Configurar propiedades de firma con valores temporales (asegurar nueva línea)
+            echo "" >> gradle.properties
+            echo "RELEASE_STORE_FILE=release-keystore.jks" >> gradle.properties
+            echo "RELEASE_STORE_PASSWORD=android" >> gradle.properties
+            echo "RELEASE_KEY_ALIAS=release-key" >> gradle.properties
+            echo "RELEASE_KEY_PASSWORD=android" >> gradle.properties
+            
             echo "✅ Keystore temporal creado (solo para testing)"
           fi
 
