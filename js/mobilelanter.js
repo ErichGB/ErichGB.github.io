@@ -2248,6 +2248,8 @@
       this.fields = {};
       this.currentQRData = null;
       this.originalButtonText = "";
+      this.debounceTimer = null;
+      this.isGenerating = false;
       this.charCounter = {
         text: null,
         remaining: null,
@@ -2259,7 +2261,6 @@
     }
     init() {
       this.form = document.getElementById("qr-form");
-      this.generateButton = document.getElementById("generate-btn");
       this.downloadButton = document.getElementById("download-btn");
       this.canvas = document.getElementById("qr-canvas");
       this.resultContainer = document.getElementById("qr-result");
@@ -2272,30 +2273,30 @@
       this.charCounter.remaining = document.getElementById("char-counter-remaining");
       this.charCounter.bar = document.getElementById("char-counter-bar");
       this.charCounter.warning = document.getElementById("char-counter-warning");
-      if (!this.form || !this.generateButton || !this.canvas) {
+      if (!this.form || !this.canvas) {
         console.error("QR Generator: Required elements not found");
         return;
       }
-      this.originalButtonText = this.generateButton.textContent.trim();
       this.setupEventListeners();
       this.updateCharCounter();
       this.validateForm();
-      console.log("QR Generator initialized with real QRCode library");
+      console.log("QR Generator initialized with auto-generation enabled");
     }
     setupEventListeners() {
       this.form.addEventListener("submit", (e) => {
         e.preventDefault();
-        this.generateQR();
       });
       Object.values(this.fields).forEach((field) => {
         if (field) {
           field.addEventListener("input", () => {
             this.validateForm();
             this.updateCharCounter();
+            this.debouncedGenerateQR();
           });
           field.addEventListener("blur", () => {
             this.validateForm();
             this.updateCharCounter();
+            this.debouncedGenerateQR();
           });
         }
       });
@@ -2306,6 +2307,21 @@
           this.downloadQR();
         });
       }
+      setTimeout(() => {
+        if (this.validateForm()) {
+          this.generateQR();
+        }
+      }, 100);
+    }
+    debouncedGenerateQR() {
+      if (this.debounceTimer) {
+        clearTimeout(this.debounceTimer);
+      }
+      this.debounceTimer = setTimeout(() => {
+        if (this.validateForm() && !this.isGenerating) {
+          this.generateQR();
+        }
+      }, 500);
     }
     getQRContentString() {
       const userName = this.fields.userName?.value.trim() || "";
@@ -2363,25 +2379,13 @@
       const qrContent = this.getQRContentString();
       const withinLimit = qrContent.length <= this.charCounter.max;
       const isValid = basicValid && withinLimit;
-      if (this.generateButton) {
-        this.generateButton.disabled = !isValid;
-        if (isValid) {
-          this.generateButton.classList.remove("opacity-50", "cursor-not-allowed");
-          this.generateButton.classList.add("hover:bg-slate-800", "dark:hover:bg-slate-100");
-        } else {
-          this.generateButton.classList.add("opacity-50", "cursor-not-allowed");
-          this.generateButton.classList.remove("hover:bg-slate-800", "dark:hover:bg-slate-100");
-        }
-      }
       return isValid;
     }
     async generateQR() {
-      if (!this.validateForm()) {
-        console.log("Form validation failed");
+      if (!this.validateForm() || this.isGenerating) {
         return;
       }
-      this.generateButton.textContent = "Generando...";
-      this.generateButton.disabled = true;
+      this.isGenerating = true;
       try {
         const qrData = {
           userName: this.fields.userName.value.trim(),
@@ -2389,6 +2393,9 @@
           context: this.fields.context.value.trim()
         };
         const qrContent = JSON.stringify(qrData);
+        if (this.currentQRData === qrContent) {
+          return;
+        }
         this.currentQRData = qrContent;
         const qrCodeDataURL = await import_qrcode.default.toDataURL(qrContent, {
           width: 200,
@@ -2406,10 +2413,9 @@
         console.log("QR Code generated successfully");
       } catch (error) {
         console.error("Error generating QR code:", error);
-        alert("Error al generar el c\xF3digo QR. Por favor, int\xE9ntalo de nuevo.");
+        console.log("Auto-generation failed, will retry on next change");
       } finally {
-        this.generateButton.textContent = this.originalButtonText;
-        this.validateForm();
+        this.isGenerating = false;
       }
     }
     async drawQRToCanvas(dataURL) {
