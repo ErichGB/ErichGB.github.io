@@ -78,6 +78,8 @@ jobs:
                     '🌿 Rama: `${{ steps.parse.outputs.branch }}`\n' +
                     '📦 Versión: `${{ steps.parse.outputs.version_name }}`\n' +
                     '🔨 Tipo: `${{ steps.parse.outputs.build_type }}`\n\n' +
+                    '🔐 **Nota sobre firma:** Si no tienes configurado un keystore personalizado, se usará uno temporal para testing. ' +
+                    'Para producción, consulta [ANDROID_KEYSTORE_SETUP.md](https://github.com/${{ github.repository }}/blob/Simple/ANDROID_KEYSTORE_SETUP.md).\n\n' +
                     'Puedes seguir el progreso en la pestaña [Actions](https://github.com/${{ github.repository }}/actions).'
             })
 
@@ -88,6 +90,7 @@ jobs:
     outputs:
       download_url: ${{ steps.get_url.outputs.download_url }}
       apk_name: ${{ steps.build.outputs.apk_name }}
+      signing_type: ${{ steps.build.outputs.signing_type }}
     steps:
       - name: 📥 Checkout del repositorio actual
         uses: actions/checkout@v4
@@ -174,6 +177,49 @@ jobs:
             "platforms;android-31" \
             "platforms;android-30"
 
+      - name: 🔐 Configurar Keystore para firma
+        run: |
+          cd android-app
+          
+          # Crear directorio para keystore si no existe
+          mkdir -p app
+          
+          # Si hay un keystore configurado en secrets, usarlo
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "🔑 Configurando keystore personalizado..."
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > app/release-keystore.jks
+            
+            # Configurar propiedades de firma
+            cat >> gradle.properties << EOF
+          RELEASE_STORE_FILE=release-keystore.jks
+          RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
+          EOF
+            echo "✅ Keystore personalizado configurado"
+          else
+            echo "⚠️ No hay keystore personalizado. Creando keystore temporal..."
+            # Crear keystore temporal para testing (NO USAR EN PRODUCCIÓN)
+            keytool -genkeypair -v \
+              -keystore app/release-keystore.jks \
+              -alias release-key \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass android \
+              -keypass android \
+              -dname "CN=Mobile Lantern, OU=Development, O=GitHub Actions, L=Internet, ST=Cloud, C=US"
+            
+            # Configurar propiedades de firma con valores temporales
+            cat >> gradle.properties << EOF
+          RELEASE_STORE_FILE=release-keystore.jks
+          RELEASE_STORE_PASSWORD=android
+          RELEASE_KEY_ALIAS=release-key
+          RELEASE_KEY_PASSWORD=android
+          EOF
+            echo "✅ Keystore temporal creado (solo para testing)"
+          fi
+
       - name: 🔧 Configurar Gradle
         run: |
           cd android-app
@@ -201,6 +247,13 @@ jobs:
           cd android-app
           
           echo "🔨 Iniciando build de tipo: ${{ needs.check-comment.outputs.build_type }}"
+          
+          # Detectar si se está usando keystore personalizado
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "signing_type=🔐 Firmado con keystore personalizado" >> $GITHUB_OUTPUT
+          else
+            echo "signing_type=⚠️ Firmado con keystore temporal (solo testing)" >> $GITHUB_OUTPUT
+          fi
           
           if [ "${{ needs.check-comment.outputs.build_type }}" == "release" ]; then
             ./gradlew assembleRelease --no-daemon --stacktrace --info
@@ -325,6 +378,7 @@ jobs:
               body: '🎉 **¡Build completado exitosamente!**\n\n' +
                     '📱 **APK generado:** `${{ needs.build-android.outputs.apk_name }}`\n' +
                     '📦 **Versión:** `${{ needs.check-comment.outputs.version_name }}`\n' +
+                    '🔐 **Firma:** ${{ needs.build-android.outputs.signing_type }}\n' +
                     '🔗 **Enlace de descarga:** [${{ needs.build-android.outputs.apk_name }}](${{ needs.build-android.outputs.download_url }})\n\n' +
                     '✅ El enlace de descarga ha sido actualizado automáticamente en la página [Mobile Lantern](https://erichgb.github.io/mobilelanter/).\n\n' +
                     '🔄 El sitio web se actualizará en unos minutos.'
@@ -348,6 +402,7 @@ jobs:
                     '- El repositorio no es accesible o no existe\n' +
                     '- La rama especificada no existe\n' +
                     '- Error en la configuración del proyecto Android\n' +
-                    '- Dependencias faltantes o incompatibles\n\n' +
+                    '- Dependencias faltantes o incompatibles\n' +
+                    '- Problemas con la firma del APK (verifica los secretos del keystore)\n\n' +
                     'Por favor verifica la información proporcionada y consulta los [logs del workflow](https://github.com/${{ github.repository }}/actions) para más detalles.'
             })
