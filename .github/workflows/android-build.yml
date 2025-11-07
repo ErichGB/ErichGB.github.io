@@ -184,12 +184,18 @@ jobs:
           # Crear directorio para keystore si no existe
           mkdir -p app
           
+          # Asegurar que gradle.properties existe
+          if [ ! -f gradle.properties ]; then
+            touch gradle.properties
+          fi
+          
           # Si hay un keystore configurado en secrets, usarlo
           if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
             echo "🔑 Configurando keystore personalizado..."
             echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > app/release-keystore.jks
             
-            # Configurar propiedades de firma (asegurar nueva línea al inicio)
+            # Configurar propiedades de firma
+            # La ruta debe ser relativa al directorio donde está build.gradle.kts (app/)
             echo "" >> gradle.properties
             echo "RELEASE_STORE_FILE=release-keystore.jks" >> gradle.properties
             echo "RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> gradle.properties
@@ -197,6 +203,8 @@ jobs:
             echo "RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> gradle.properties
             
             echo "✅ Keystore personalizado configurado"
+            echo "📋 Verificando propiedades configuradas:"
+            grep "RELEASE_" gradle.properties || echo "⚠️ No se encontraron propiedades RELEASE_"
           else
             echo "⚠️ No hay keystore personalizado. Creando keystore temporal..."
             # Crear keystore temporal para testing (NO USAR EN PRODUCCIÓN)
@@ -210,7 +218,8 @@ jobs:
               -keypass android \
               -dname "CN=Mobile Lantern, OU=Development, O=GitHub Actions, L=Internet, ST=Cloud, C=US"
             
-            # Configurar propiedades de firma con valores temporales (asegurar nueva línea)
+            # Configurar propiedades de firma con valores temporales
+            # La ruta debe ser relativa al directorio donde está build.gradle.kts (app/)
             echo "" >> gradle.properties
             echo "RELEASE_STORE_FILE=release-keystore.jks" >> gradle.properties
             echo "RELEASE_STORE_PASSWORD=android" >> gradle.properties
@@ -218,7 +227,40 @@ jobs:
             echo "RELEASE_KEY_PASSWORD=android" >> gradle.properties
             
             echo "✅ Keystore temporal creado (solo para testing)"
+            echo "📋 Verificando propiedades configuradas:"
+            grep "RELEASE_" gradle.properties || echo "⚠️ No se encontraron propiedades RELEASE_"
           fi
+          
+          # Verificar que el keystore existe
+          if [ -f app/release-keystore.jks ]; then
+            echo "✅ Keystore encontrado en: app/release-keystore.jks"
+            ls -lh app/release-keystore.jks
+          else
+            echo "❌ Error: Keystore no encontrado"
+            exit 1
+          fi
+          
+          # Validar que las propiedades no estén vacías
+          echo "🔍 Validando propiedades de firma..."
+          RELEASE_STORE_FILE=$(grep "^RELEASE_STORE_FILE=" gradle.properties | cut -d'=' -f2 | tr -d ' ')
+          RELEASE_STORE_PASSWORD=$(grep "^RELEASE_STORE_PASSWORD=" gradle.properties | cut -d'=' -f2 | tr -d ' ')
+          RELEASE_KEY_ALIAS=$(grep "^RELEASE_KEY_ALIAS=" gradle.properties | cut -d'=' -f2 | tr -d ' ')
+          RELEASE_KEY_PASSWORD=$(grep "^RELEASE_KEY_PASSWORD=" gradle.properties | cut -d'=' -f2 | tr -d ' ')
+          
+          if [ -z "$RELEASE_STORE_FILE" ] || [ -z "$RELEASE_STORE_PASSWORD" ] || [ -z "$RELEASE_KEY_ALIAS" ] || [ -z "$RELEASE_KEY_PASSWORD" ]; then
+            echo "❌ Error: Una o más propiedades de firma están vacías"
+            echo "RELEASE_STORE_FILE: '$RELEASE_STORE_FILE'"
+            echo "RELEASE_STORE_PASSWORD: '${RELEASE_STORE_PASSWORD:+[SET]}'"
+            echo "RELEASE_KEY_ALIAS: '$RELEASE_KEY_ALIAS'"
+            echo "RELEASE_KEY_PASSWORD: '${RELEASE_KEY_PASSWORD:+[SET]}'"
+            exit 1
+          fi
+          
+          echo "✅ Todas las propiedades de firma están configuradas"
+          
+          # Mostrar contenido de gradle.properties para debug
+          echo "📄 Contenido de gradle.properties (últimas líneas):"
+          tail -10 gradle.properties || echo "No se pudo leer gradle.properties"
 
       - name: 🔧 Configurar Gradle
         run: |
