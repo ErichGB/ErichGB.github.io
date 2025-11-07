@@ -293,15 +293,16 @@ jobs:
           
           # Agregar propiedades del keystore a local.properties (el proyecto las lee desde aquí)
           # El proyecto espera: KEYSTORE_FILE, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+          # NOTA: La ruta debe ser relativa al directorio app/ donde está build.gradle.kts
           if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
-            echo "KEYSTORE_FILE=app/release-keystore.jks" >> local.properties
+            echo "KEYSTORE_FILE=release-keystore.jks" >> local.properties
             echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> local.properties
             echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> local.properties
             echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> local.properties
             echo "✅ Propiedades del keystore agregadas a local.properties"
           else
             # Usar valores del keystore temporal
-            echo "KEYSTORE_FILE=app/release-keystore.jks" >> local.properties
+            echo "KEYSTORE_FILE=release-keystore.jks" >> local.properties
             echo "KEYSTORE_PASSWORD=android" >> local.properties
             echo "KEY_ALIAS=release-key" >> local.properties
             echo "KEY_PASSWORD=android" >> local.properties
