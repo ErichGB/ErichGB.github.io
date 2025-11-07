@@ -196,11 +196,14 @@ jobs:
             
             # Configurar propiedades de firma
             # La ruta debe ser relativa al directorio donde está build.gradle.kts (app/)
-            echo "" >> gradle.properties
-            echo "RELEASE_STORE_FILE=release-keystore.jks" >> gradle.properties
-            echo "RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> gradle.properties
-            echo "RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> gradle.properties
-            echo "RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> gradle.properties
+            # Asegurar que no haya espacios alrededor del = para evitar problemas de lectura
+            {
+              echo ""
+              echo "RELEASE_STORE_FILE=release-keystore.jks"
+              echo "RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}"
+              echo "RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}"
+              echo "RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}"
+            } >> gradle.properties
             
             echo "✅ Keystore personalizado configurado"
             echo "📋 Verificando propiedades configuradas:"
@@ -220,11 +223,14 @@ jobs:
             
             # Configurar propiedades de firma con valores temporales
             # La ruta debe ser relativa al directorio donde está build.gradle.kts (app/)
-            echo "" >> gradle.properties
-            echo "RELEASE_STORE_FILE=release-keystore.jks" >> gradle.properties
-            echo "RELEASE_STORE_PASSWORD=android" >> gradle.properties
-            echo "RELEASE_KEY_ALIAS=release-key" >> gradle.properties
-            echo "RELEASE_KEY_PASSWORD=android" >> gradle.properties
+            # Asegurar que no haya espacios alrededor del = para evitar problemas de lectura
+            {
+              echo ""
+              echo "RELEASE_STORE_FILE=release-keystore.jks"
+              echo "RELEASE_STORE_PASSWORD=android"
+              echo "RELEASE_KEY_ALIAS=release-key"
+              echo "RELEASE_KEY_PASSWORD=android"
+            } >> gradle.properties
             
             echo "✅ Keystore temporal creado (solo para testing)"
             echo "📋 Verificando propiedades configuradas:"
@@ -258,6 +264,13 @@ jobs:
           
           echo "✅ Todas las propiedades de firma están configuradas"
           
+          # También configurar como variables de entorno para Gradle (formato ORG_GRADLE_PROJECT_*)
+          # Esto asegura que Gradle pueda leer las propiedades incluso si hay problemas con gradle.properties
+          echo "ORG_GRADLE_PROJECT_RELEASE_STORE_FILE=$RELEASE_STORE_FILE" >> $GITHUB_ENV
+          echo "ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD=$RELEASE_STORE_PASSWORD" >> $GITHUB_ENV
+          echo "ORG_GRADLE_PROJECT_RELEASE_KEY_ALIAS=$RELEASE_KEY_ALIAS" >> $GITHUB_ENV
+          echo "ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD=$RELEASE_KEY_PASSWORD" >> $GITHUB_ENV
+          
           # Mostrar contenido de gradle.properties para debug
           echo "📄 Contenido de gradle.properties (últimas líneas):"
           tail -10 gradle.properties || echo "No se pudo leer gradle.properties"
@@ -278,9 +291,39 @@ jobs:
             echo "apiKey=dummy_key_for_build" >> local.properties
           fi
           
+          # Agregar propiedades del keystore a local.properties (el proyecto las lee desde aquí)
+          # El proyecto espera: KEYSTORE_FILE, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "KEYSTORE_FILE=app/release-keystore.jks" >> local.properties
+            echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> local.properties
+            echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> local.properties
+            echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> local.properties
+            echo "✅ Propiedades del keystore agregadas a local.properties"
+          else
+            # Usar valores del keystore temporal
+            echo "KEYSTORE_FILE=app/release-keystore.jks" >> local.properties
+            echo "KEYSTORE_PASSWORD=android" >> local.properties
+            echo "KEY_ALIAS=release-key" >> local.properties
+            echo "KEY_PASSWORD=android" >> local.properties
+            echo "✅ Propiedades del keystore temporal agregadas a local.properties"
+          fi
+          
+          # Mostrar contenido de local.properties (sin contraseñas)
+          echo "📄 Contenido de local.properties (sin contraseñas):"
+          sed 's/\(PASSWORD\)=.*/\1=***/' local.properties || cat local.properties
+          
       - name: 🧹 Limpiar proyecto
         run: |
           cd android-app
+          
+          # Verificar que las propiedades se pueden leer con Gradle
+          echo "🔍 Verificando que Gradle puede leer las propiedades..."
+          ./gradlew properties --no-daemon 2>&1 | grep -E "RELEASE_|keystore" || echo "No se encontraron propiedades RELEASE_ en la salida de Gradle"
+          
+          # Mostrar el contenido completo de gradle.properties
+          echo "📄 Contenido completo de gradle.properties:"
+          cat gradle.properties
+          
           ./gradlew clean
 
       - name: 🏗️ Build del APK
