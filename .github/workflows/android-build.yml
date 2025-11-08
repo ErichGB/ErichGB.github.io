@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       download_url: ${{ steps.get_url.outputs.download_url }}
-      apk_name: ${{ steps.build.outputs.apk_name }}
+      apk_name: ${{ steps.get_url.outputs.apk_name }}
       signing_type: ${{ steps.build.outputs.signing_type }}
     steps:
       - name: 📥 Checkout del repositorio actual
@@ -356,10 +356,25 @@ jobs:
           
           # Renombrar APK con información de versión
           APK_NAME="mobile-lantern-${{ needs.check-comment.outputs.version_name }}-${{ needs.check-comment.outputs.build_type }}.apk"
+          # Mover el APK al directorio raíz del job (relativo a android-app)
           mv "$APK_PATH" "../$APK_NAME"
           
+          # La ruta relativa desde el directorio raíz del job
+          APK_FULL_PATH="$APK_NAME"
+          
           echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+          echo "apk_path=$APK_FULL_PATH" >> $GITHUB_OUTPUT
           echo "✅ APK generado: $APK_NAME"
+          echo "📁 Ruta para release: $APK_FULL_PATH"
+          
+          # Verificar que el archivo existe
+          if [ -f "../$APK_NAME" ]; then
+            echo "✅ Archivo APK verificado en: ../$APK_NAME"
+            ls -lh "../$APK_NAME"
+          else
+            echo "❌ Error: El archivo APK no se encontró en ../$APK_NAME"
+            exit 1
+          fi
 
       - name: 📦 Crear Release en GitHub
         id: release
@@ -385,7 +400,7 @@ jobs:
             
             ---
             *Generado automáticamente por GitHub Actions*
-          files: ${{ steps.build.outputs.apk_name }}
+          files: ${{ steps.build.outputs.apk_path }}
           draft: false
           prerelease: false
         env:
@@ -394,9 +409,27 @@ jobs:
       - name: 📝 Obtener URL de descarga
         id: get_url
         run: |
+          # Verificar que apk_name esté disponible
+          APK_NAME="${{ steps.build.outputs.apk_name }}"
+          VERSION_NAME="${{ needs.check-comment.outputs.version_name }}"
+          
+          if [ -z "$APK_NAME" ]; then
+            echo "❌ Error: apk_name no está disponible"
+            echo "Outputs del step build:"
+            echo "  apk_name: $APK_NAME"
+            exit 1
+          fi
+          
           # Construir URL de descarga del release
-          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${{ needs.check-comment.outputs.version_name }}-android/${{ steps.build.outputs.apk_name }}"
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${VERSION_NAME}-android/${APK_NAME}"
+          
+          echo "📦 Información del APK:"
+          echo "  APK Name: $APK_NAME"
+          echo "  Version: $VERSION_NAME"
+          echo "  Download URL: $DOWNLOAD_URL"
+          
           echo "download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
+          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
 
   update-website:
     needs: [check-comment, build-android]
@@ -410,19 +443,43 @@ jobs:
 
       - name: 🔄 Actualizar enlace de descarga en Mobile Lantern
         run: |
+          # Verificar que los outputs estén disponibles
+          VERSION="${{ needs.check-comment.outputs.version_name }}"
+          DOWNLOAD_URL="${{ needs.build-android.outputs.download_url }}"
+          APK_NAME="${{ needs.build-android.outputs.apk_name }}"
+          BUILD_TYPE="${{ needs.check-comment.outputs.build_type }}"
+          
+          echo "📋 Valores recibidos:"
+          echo "  Version: $VERSION"
+          echo "  Download URL: $DOWNLOAD_URL"
+          echo "  APK Name: $APK_NAME"
+          echo "  Build Type: $BUILD_TYPE"
+          
+          # Validar que los valores críticos no estén vacíos
+          if [ -z "$DOWNLOAD_URL" ] || [ -z "$APK_NAME" ]; then
+            echo "⚠️ Warning: download_url o apk_name están vacíos"
+            echo "  download_url: '$DOWNLOAD_URL'"
+            echo "  apk_name: '$APK_NAME'"
+            echo "  Usando valores por defecto..."
+            DOWNLOAD_URL=""
+            APK_NAME=""
+          fi
+          
           # Crear archivo JSON con información del APK
           cat > static/mobile-lantern-download.json << EOF
           {
-            "version": "${{ needs.check-comment.outputs.version_name }}",
-            "download_url": "${{ needs.build-android.outputs.download_url }}",
-            "apk_name": "${{ needs.build-android.outputs.apk_name }}",
-            "build_type": "${{ needs.check-comment.outputs.build_type }}",
+            "version": "${VERSION}",
+            "download_url": "${DOWNLOAD_URL}",
+            "apk_name": "${APK_NAME}",
+            "build_type": "${BUILD_TYPE}",
             "updated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "available": true
           }
           EOF
           
           echo "✅ Archivo de configuración actualizado"
+          echo "📄 Contenido del JSON:"
+          cat static/mobile-lantern-download.json
 
       - name: ☕ Instalar Hugo CLI
         run: |
