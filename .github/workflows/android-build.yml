@@ -21,6 +21,7 @@ jobs:
       version_name: ${{ steps.parse.outputs.version_name }}
       build_type: ${{ steps.parse.outputs.build_type }}
       release_notes: ${{ steps.parse.outputs.release_notes }}
+
     steps:
       - name: ✅ Verificar comando y parsear issue
         id: check
@@ -280,19 +281,30 @@ jobs:
           cd android-app
           chmod +x gradlew
           
-          # Crear local.properties con la ruta del Android SDK y API key
+          # Crear local.properties con la ruta del Android SDK
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           
-          # Agregar API key de Gemini si está disponible
-          if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
-            echo "apiKey=${{ secrets.GEMINI_API_KEY }}" >> local.properties
+          # Configurar BASE_URL del API (solo desde secrets por seguridad)
+          if [ -n "${{ secrets.BASE_URL }}" ]; then
+            echo "BASE_URL=${{ secrets.BASE_URL }}" >> local.properties
+            echo "✅ BASE_URL configurada desde secrets"
           else
-            echo "⚠️ Warning: GEMINI_API_KEY no está configurado. El build puede fallar."
-            echo "apiKey=dummy_key_for_build" >> local.properties
+            echo "⚠️ Warning: BASE_URL no está configurado en secrets. Se usará valor por defecto."
+            echo "BASE_URL=https://example.invalid/" >> local.properties
           fi
           
-          # Agregar propiedades del keystore a local.properties (el proyecto las lee desde aquí)
-          # El proyecto espera: KEYSTORE_FILE, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+          # Configurar credenciales de autenticación básica
+          if [ -n "${{ secrets.BASIC_USER }}" ]; then
+            echo "BASIC_USER=${{ secrets.BASIC_USER }}" >> local.properties
+            echo "BASIC_PASS=${{ secrets.BASIC_PASS }}" >> local.properties
+            echo "✅ Credenciales de API configuradas desde secrets"
+          else
+            echo "⚠️ Warning: BASIC_USER/BASIC_PASS no están configurados."
+            echo "BASIC_USER=" >> local.properties
+            echo "BASIC_PASS=" >> local.properties
+          fi
+          
+          # Agregar propiedades del keystore a local.properties
           # NOTA: La ruta debe ser relativa al directorio app/ donde está build.gradle.kts
           if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
             echo "KEYSTORE_FILE=release-keystore.jks" >> local.properties
@@ -311,8 +323,8 @@ jobs:
           
           # Mostrar contenido de local.properties (sin contraseñas)
           echo "📄 Contenido de local.properties (sin contraseñas):"
-          sed 's/\(PASSWORD\)=.*/\1=***/' local.properties || cat local.properties
-          
+          sed 's/\(PASSWORD\|PASS\)=.*/\1=***/' local.properties
+
       - name: 🧹 Limpiar proyecto
         run: |
           cd android-app
