@@ -376,6 +376,10 @@ jobs:
             exit 1
           fi
 
+      - name: 🕐 Obtener fecha actual
+        id: date
+        run: echo "build_date=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
+
       - name: 📦 Crear Release en GitHub
         id: release
         uses: softprops/action-gh-release@v1
@@ -388,7 +392,7 @@ jobs:
             📱 **Versión:** ${{ needs.check-comment.outputs.version_name }}
             🔨 **Tipo de Build:** ${{ needs.check-comment.outputs.build_type }}
             🌿 **Rama:** ${{ needs.check-comment.outputs.branch }}
-            📅 **Fecha:** $(date +'%Y-%m-%d %H:%M:%S UTC')
+            📅 **Fecha:** ${{ steps.date.outputs.build_date }}
             
             ### 📝 Notas de la versión
             ${{ needs.check-comment.outputs.release_notes }}
