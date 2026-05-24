@@ -43,8 +43,16 @@ jobs:
           repo_url=$(echo "$issue_body" | grep -oP 'https://github\.com/[^\s]+' | head -1)
           echo "repo_url=$repo_url" >> $GITHUB_OUTPUT
           
-          # Extraer rama (buscar después de "Rama del Repositorio")
-          branch=$(echo "$issue_body" | grep -A5 "Rama del Repositorio" | grep -oP '(main|master|develop|release)' | head -1)
+          # Extraer rama: si la URL contiene /tree/, usarla como rama principal
+          if echo "$repo_url" | grep -qP '/tree/'; then
+            # Extraer todo después de /tree/ como candidato a rama
+            url_branch=$(echo "$repo_url" | sed 's|.*/tree/||')
+            echo "📌 Rama detectada desde URL: $url_branch"
+            branch="$url_branch"
+          else
+            # Buscar en el campo "Rama del Repositorio" del issue
+            branch=$(echo "$issue_body" | grep -A3 "Rama del Repositorio" | tail -n +2 | grep -oP '\S+' | head -1)
+          fi
           if [ -z "$branch" ]; then branch="main"; fi
           echo "branch=$branch" >> $GITHUB_OUTPUT
           
@@ -103,7 +111,9 @@ jobs:
         id: parse_repo
         run: |
           REPO_URL="${{ needs.check-comment.outputs.repo_url }}"
+          BRANCH="${{ needs.check-comment.outputs.branch }}"
           echo "URL completa: $REPO_URL"
+          echo "Rama: $BRANCH"
           
           if [[ $REPO_URL == *"github.com"* ]]; then
             # Extraer owner/repo (sin el /tree/branch/path)
@@ -111,13 +121,21 @@ jobs:
             echo "Repositorio: $REPO_PATH"
             echo "repo_path=$REPO_PATH" >> $GITHUB_OUTPUT
             
-            # Si la URL contiene un subdirectorio específico
+            # Detectar subdirectorio
             if [[ $REPO_URL == *"/tree/"* ]]; then
-              # Extraer el subdirectorio después de /tree/branch/
-              SUBDIR=$(echo $REPO_URL | sed 's|.*/tree/[^/]*/||')
-              echo "Subdirectorio: $SUBDIR"
-              echo "subdir=$SUBDIR" >> $GITHUB_OUTPUT
-              echo "has_subdir=true" >> $GITHUB_OUTPUT
+              # Quitar todo hasta /tree/ y luego quitar la rama del inicio
+              AFTER_TREE=$(echo "$REPO_URL" | sed 's|.*/tree/||')
+              # Quitar la rama (que puede contener /) del inicio
+              SUBDIR=$(echo "$AFTER_TREE" | sed "s|^${BRANCH}||" | sed 's|^/||')
+              
+              if [ -n "$SUBDIR" ]; then
+                echo "📁 Subdirectorio detectado: $SUBDIR"
+                echo "subdir=$SUBDIR" >> $GITHUB_OUTPUT
+                echo "has_subdir=true" >> $GITHUB_OUTPUT
+              else
+                echo "📁 No hay subdirectorio, usando raíz del repositorio"
+                echo "has_subdir=false" >> $GITHUB_OUTPUT
+              fi
             else
               echo "📁 Usando raíz del repositorio"
               echo "has_subdir=false" >> $GITHUB_OUTPUT
@@ -153,6 +171,25 @@ jobs:
           else
             echo "📁 Usando raíz del repositorio"
             cp -r android-app-full android-app
+          fi
+          
+          # Si no hay gradlew en el directorio, buscar automáticamente
+          if [ ! -f "android-app/gradlew" ]; then
+            echo "⚠️ gradlew no encontrado en android-app/, buscando en subdirectorios..."
+            GRADLEW_PATH=$(find android-app -name "gradlew" -type f | head -1)
+            if [ -n "$GRADLEW_PATH" ]; then
+              ANDROID_DIR=$(dirname "$GRADLEW_PATH")
+              echo "✅ Proyecto Android encontrado en: $ANDROID_DIR"
+              # Mover al directorio esperado
+              mv android-app android-app-temp
+              mv "$ANDROID_DIR" android-app
+              rm -rf android-app-temp
+            else
+              echo "❌ No se encontró gradlew en ningún subdirectorio"
+              echo "📋 Estructura del repositorio:"
+              find android-app -maxdepth 3 -type f -name "*.gradle*" -o -name "gradlew" | head -20
+              exit 1
+            fi
           fi
           
           echo "📋 Contenido del directorio android-app:"
